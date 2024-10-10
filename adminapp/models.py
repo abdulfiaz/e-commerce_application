@@ -4,7 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
 class IUMaster(models.Model):
-    name=models.CharField(max_length=100,blank=True,null=True)
+    host_name=models.CharField(max_length=100,blank=True,null=True)
     description=models.CharField(max_length=100,blank=True,null=True)
     host=ArrayField(models.CharField(max_length=200,blank=True,null=True))  
     is_active=models.BooleanField(default=True)
