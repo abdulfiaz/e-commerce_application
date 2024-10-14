@@ -63,6 +63,3 @@ class UserRoleMapping(models.Model):
         db_table="UserRoleMapping"
 
 
-
-
-
