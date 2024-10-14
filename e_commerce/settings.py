@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'users',
     'rest_framework',
     'graphene_django',
-    'rest_framework_simplejwt',
     
 ]
 
