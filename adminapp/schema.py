@@ -1,5 +1,4 @@
 import base64
-from urllib import request
 from adminapp.models import CustomUser, IUMaster, RoleMaster, UserRoleMapping
 from adminapp.token import authorization
 from e_commerce.settings import EMAIL_HOST_USER
@@ -59,9 +58,7 @@ class CreateUser(graphene.Mutation):
         try:
             transaction.set_autocommit(False)
             token_data=authorization(info)
-            print(token_data)
             user_id=token_data.get('user_id')
-            print(user_id)
             user_data=UserRoleMapping.objects.get(user=user_id)
             role_name=user_data.role.role_name
 

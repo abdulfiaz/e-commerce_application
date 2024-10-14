@@ -15,7 +15,7 @@ class IUMaster(models.Model):
 
     
     class Meta:
-        db_table="IUMaster"
+        db_table="iu_master"
 
 class CustomUser(AbstractUser):
     
@@ -38,7 +38,7 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['mobile_number']
 
     class Meta:
-        db_table="CustomUser"
+        db_table="custom_user"
         ordering = ["created_at"]
         unique_together=[('mobile_number','iu_id')]
 
@@ -52,7 +52,7 @@ class RoleMaster(models.Model):
     modified_at=models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table="RoleMaster"
+        db_table="role_master"
         ordering = ["created_at"]
 
 class UserRoleMapping(models.Model):
@@ -60,6 +60,7 @@ class UserRoleMapping(models.Model):
     role=models.ForeignKey(RoleMaster,on_delete=models.CASCADE)
 
     class Meta:
-        db_table="UserRoleMapping"
+        db_table="user_rolemapping"
+
 
 

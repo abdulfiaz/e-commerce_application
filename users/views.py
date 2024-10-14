@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-from requests import Response
+from rest_framework.response import Response
 from adminapp.models import UserRoleMapping
 from .models import CategoryMaster,SubCategory
 from rest_framework import status
@@ -143,7 +143,7 @@ class SubCategoryView(APIView):
                     created_by=request.user,
                     modified_by=request.user,
                     modified_at=products.modified_at
-                    }
+                }
 
                 return Response({'data':response_data},status=status.HTTP_200_OK)   
             else:

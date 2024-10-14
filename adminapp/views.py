@@ -1,9 +1,13 @@
+import random
 from django.shortcuts import render
 from adminapp.models import CustomUser, IUMaster, RoleMaster, UserRoleMapping
 from rest_framework.views import APIView,status
 from rest_framework.response import Response
 from django.contrib.auth.hashers import check_password
+from e_commerce.settings import EMAIL_HOST_USER
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
+
 
 class RoleMaster_API(APIView):
     def post(self,request):
@@ -77,9 +81,6 @@ class IUMaster_API(APIView):
             return Response({"status":"success","message":"iumaster created successfully"},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
-        
-    def put(self,request):
-        return
 
     def delete(self,request):
         try:
