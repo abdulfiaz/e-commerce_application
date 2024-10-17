@@ -8,6 +8,6 @@ urlpatterns = [
     path('categories/',CategoryView.as_view(), name='category-list'),
     path('graphql/', GraphQLAPI.as_view(graphiql=True)),
     path('product/',SubCategoryView.as_view(),name='products'),
-    path('cart/add/',AddToCartView.as_view(), name='add-to-cart'),  # URL for adding products to cart
+    path('cart/',AddToCartView.as_view(), name='add-to-cart'),  # URL for adding products to cart
 ]
     

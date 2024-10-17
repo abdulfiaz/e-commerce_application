@@ -1,6 +1,7 @@
 import random
 from django.shortcuts import render
 from adminapp.models import CustomUser, IUMaster, RoleMaster, SellerRegistration, UserRoleMapping
+from users.models import SubCategory
 from rest_framework.views import APIView,status
 from rest_framework.response import Response
 from django.contrib.auth.hashers import check_password,make_password
@@ -184,25 +185,52 @@ class Forgot_passwordAPI(APIView):
         
 class SellerRegisterApi(APIView):
     def post(self,request):
-        user_id=request.user.id
-
-        gst_no=request.data.get('gst_no')
-        business_name=request.data.get('business_name')
-        seller_status=request.data.get('seller_status')
-        rejection_detail=request.data.get('rejection_detail')
-        created_by=request.user.id
-        modified_by=request.user.id
-        
-
+        try:
+            user_id=request.user.id
+            gst_no=request.data.get('gst_no')
+            business_name=request.data.get('business_name')
+            seller_status=request.data.get('seller_status')
+            rejection_detail=request.data.get('rejection_detail')
+            created_by=request.user.id
+            modified_by=request.user.id
+            seller_register=SellerRegistration(
+                user=user_id,
+                gst_no=gst_no,
+                bussiness_name=business_name,
+                seller_status=seller_status,
+                rejection_detail=rejection_detail,
+                created_by=created_by,
+                modified_by=modified_by
+            )
+            seller_register.save()
+            return Response({"status":"sucess","message":"you successfully registered for seller"},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
     def put(self,request):
-        if not request.user.role.role_name in ['manager']:
+        user_id= request.user.id
+        user_role=UserRoleMapping.objects.get(user=user_id)
+        role=RoleMaster.objects.get(id=user_role.role.id)
+        if role.role_name in ['seller']:
+            try:
+                sell_reg=SellerRegistration.objects.get(user=user_id,seller_status='pending')
+                sell_reg.gst_no=('gst_no',sell_reg.gst_no)
+                sell_reg.bussiness_name=('business_name',sell_reg.bussiness_name)
+                sell_reg.save()
+                return Response({"status":"success","message":"your data updated"},status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif not role.role_name in ['manager']:
             return Response({"status":"failed","message":"unauthorized access"},status=status.HTTP_401_UNAUTHORIZED)
         try:
             transaction.set_autocommit(False)
             sellerregistration_id=request.data.get("sellerregistration_id")
             seller_register=SellerRegistration.objects.get(id=sellerregistration_id)
-            seller_register.seller_status=("status",seller_register.seller_status)
+            new_status=request.data.get("status")
+            if new_status:
+                seller_register.seller_status=new_status
             
             if seller_register.seller_status in ['rejected']:
                 reject_detail=request.data.get("rejection_detail")
@@ -220,6 +248,22 @@ class SellerRegisterApi(APIView):
         except Exception as e:
             return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
             
+    def delete(self,request):
+        try:
+            user_id= request.user.id
+            role=RoleMaster.objects.get(id=user_id)
+            if not role.role_name in ['manager']:
+                return Response({"status":"failed","message":"unauthorized access"},status=status.HTTP_400_BAD_REQUEST)
+            sell_reg_id=request.data.get("seller_registration_id")
+            sell_register=SellerRegistration.objects.get(id=sell_reg_id)
+            sell_register.is_active=False
+            sell_register.save()
+            return Response({"status":"success","message":"seller deleted succcessfully"},status=status.HTTP_200_OK)
+        except SellerRegistration.DoesNotExist:
+            return Response({"status":"failed","message":"seller registration id does not exist"},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
+
 class RoleSwitchingApi(APIView):
     def post(self,request):
         try:
@@ -251,3 +295,25 @@ class RoleSwitchingApi(APIView):
         except Exception as e:
             return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
+class SubcategoryApi(APIView):
+    def put(self,request):
+        try:
+            user_id= request.user.id
+            user_role=UserRoleMapping.objects.get(user=user_id)
+            role=RoleMaster.objects.get(id=user_role.role.id)
+            if not role.role_name in ['manager']:
+                return Response({"status":"failed","message":"unauthorized access"},status=status.HTTP_400_BAD_REQUEST)
+            product_id=request.data.get('product_id')
+            status_detail=request.data.get('status')
+            product=SubCategory.objects.get(id=product_id)
+            product.manager_approval=status_detail
+            product.save()
+            subject="Status of inserted product"
+            message=f"your request is {product.manager_approval}"
+            send_mail(subject,message,EMAIL_HOST_USER,[product.user.email])
+            return Response({"status":"success","message":"seller status updated successfully"},status=status.HTTP_200_OK)
+        except SubCategory.DoesNotExist:
+            return Response({"status":"failed","message":"product does not exist"})
+        except Exception as e:
+            return Response({"status":"error","message":str(e)},status=status.HTTP_400_BAD_REQUEST)
+       
