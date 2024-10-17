@@ -34,6 +34,8 @@ class CustomUser(AbstractUser):
     modified_at=models.DateTimeField(auto_now=True)
     iu_id = models.ForeignKey(IUMaster,on_delete=models.CASCADE)
     temp_otp=models.IntegerField(blank=True,null=True)
+    last_login_role=models.IntegerField(blank=True,null=True)
+    profile=models.JSONField(blank=True,null=True,default=dict)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['mobile_number']
 
@@ -62,5 +64,19 @@ class UserRoleMapping(models.Model):
     class Meta:
         db_table="user_rolemapping"
 
+class SellerRegistration(models.Model):
+    user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
+    
+    gst_no=models.IntegerField(blank=True,null=True)
+    bussiness_name=models.CharField(max_length=100,blank=True,null=True)
+    seller_status=models.CharField(max_length=100,blank=True,null=True,default="pending")
+    rejection_detail=models.CharField(max_length=100,blank=True,null=True)
+    
+    is_active=models.BooleanField(default=True)
+    created_by=models.IntegerField()
+    created_at=models.DateTimeField(auto_now_add=True)
+    modified_by=models.IntegerField()
+    modified_at=models.DateTimeField(auto_now=True)
 
-
+    class Meta:
+        db_table="seller_registration"

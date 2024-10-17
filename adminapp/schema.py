@@ -1,5 +1,5 @@
 import base64
-from adminapp.models import CustomUser, IUMaster, RoleMaster, UserRoleMapping
+from adminapp.models import CustomUser, IUMaster, RoleMaster, UserRoleMapping,SellerRegistration
 from adminapp.token import authorization
 from e_commerce.settings import EMAIL_HOST_USER
 import graphene
@@ -9,6 +9,17 @@ from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.db import transaction
+
+# used to get role name
+def tokenRole_name(info):
+    token_data=authorization(info)
+    try:
+        user_id=token_data.get('user_id')
+    except Exception as e:
+        raise Exception({"Token not provided"})
+    user_data=UserRoleMapping.objects.get(user=user_id)
+    role_name=user_data.role.role_name
+    return role_name
 
 class RoleType(DjangoObjectType):
     class Meta:
@@ -22,24 +33,53 @@ class IuIdType(DjangoObjectType):
     class Meta:
         model=IUMaster
 
+class SellerregisterType(DjangoObjectType):
+    class Meta:
+        model=SellerRegistration
+
 class Query(graphene.ObjectType):
     all_roles = graphene.List(RoleType)
     all_users = graphene.List(CustomUserType)
     all_iuId = graphene.List(IuIdType)
+    all_registers=graphene.List(SellerregisterType,seller_status=graphene.String())
 
     def resolve_all_roles(self,info):
+        role_name=tokenRole_name(info)
+        if not role_name in ['manager']:
+            raise Exception("unauthorized user")
         roles=RoleMaster.objects.all()
-        try:
-            return roles
-        except RoleMaster.DoesNotExist:
-            return "Table Data does not exist"
+        return roles
+        
     def resolve_all_users(self,info):
+        role_name=tokenRole_name(info)
+        if not role_name in ['manager']:
+            raise Exception("unauthorized user")
         Users=CustomUser.objects.all()
         return Users
     
     def resolve_all_iuId(self,info):
+        role_name=tokenRole_name(info)
+        if not role_name in ['manager']:
+            raise Exception("unauthorized user")
         iuid=IUMaster.objects.all()
         return iuid
+    
+    def resolve_all_registers(self,info,seller_status=None):
+        role_name=tokenRole_name(info)
+        if not role_name in ['manager']:
+            raise Exception("unauthorized user")
+        register=SellerRegistration.objects.all()
+        if seller_status == 'pending':
+            register = SellerRegistration.objects.filter(seller_status='pending')
+            return register
+        if seller_status == 'approved':
+            register = SellerRegistration.objects.filter(seller_status='approved')
+            return register
+        if seller_status == 'rejected':
+            register = SellerRegistration.objects.filter(seller_status='rejected')
+            return register
+        return register
+
     
 class CreateUser(graphene.Mutation):
     class Arguments:
@@ -51,14 +91,20 @@ class CreateUser(graphene.Mutation):
         date_of_birth=graphene.String(required=True)
         # iu_id=graphene.Int(required=True)
         role_id=graphene.Int(required=True)
+        gst_number=graphene.Int()
+        business_name=graphene.String()
+
         
     user=graphene.Field(CustomUserType)
 
-    def mutate(self,info,first_name,last_name,email,password,mobile_number,date_of_birth,role_id):
+    def mutate(self,info,first_name,last_name,email,password,mobile_number,date_of_birth,role_id,gst_number,business_name):
         try:
             transaction.set_autocommit(False)
             token_data=authorization(info)
-            user_id=token_data.get('user_id')
+            try:
+                user_id=token_data.get('user_id')
+            except Exception as e:
+                raise Exception({"no token provided"})
             user_data=UserRoleMapping.objects.get(user=user_id)
             role_name=user_data.role.role_name
 
@@ -73,8 +119,7 @@ class CreateUser(graphene.Mutation):
             for iu in ium:
                 if host in iu.host[0]:
                     IU_ID=iu
-                    break
-            
+                    break 
             # IU_ID=IUMaster.objects.get(id=iu_id)
             users=CustomUser(
                 first_name=first_name,
@@ -95,6 +140,18 @@ class CreateUser(graphene.Mutation):
                 role=user_role
             )
             user_role_mapping.save()
+            
+            if user_role.role_name in ['seller']:
+                seller_registration=SellerRegistration(
+                    user=users,
+                    gst_no=gst_number,
+                    bussiness_name=business_name,
+                    created_by=user_id,
+                    modified_by=user_id
+                )
+                seller_registration.save()
+
+
             subject='user registered successfully'
             message=f'your email : {email} \nyour password : {password}'
             abs_path=r"C:\Users\kingk\Downloads\welcome.jpg"
