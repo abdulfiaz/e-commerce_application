@@ -4,6 +4,7 @@ from adminapp.models import *
 class CategoryMaster(models.Model):
     category_name=models.CharField(max_length=200,null=True,blank=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True,blank=True) 
+    manager_approval=models.CharField(max_length=200,null=True,blank=True,default='Pending')
     created_at=models.DateTimeField(auto_now_add=True)
     modified_at=models.DateTimeField(auto_now=True)
     modified_by=models.IntegerField(blank=True,null=True)
